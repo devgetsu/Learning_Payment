@@ -1,0 +1,6 @@
+@Click_Integration_HostAddress = http://localhost:5074
+
+GET {{Click_Integration_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
