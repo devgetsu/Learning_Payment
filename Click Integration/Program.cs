@@ -7,6 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 builder.Services.AddDbContext<ApplicationDbContext>(x =>
     x.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -19,6 +20,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(
+    policyName => policyName.AllowAnyMethod()
+            .AllowAnyHeader()
+                .AllowCredentials()
+                    .AllowAnyOrigin());
 
 app.UseAuthorization();
 
