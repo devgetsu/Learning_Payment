@@ -53,7 +53,7 @@ namespace Click_Integration.Controllers
                 ClickTransId = prepareRequest.ClickTransId,
                 MerchantTransId = prepareRequest.MerchantTransId,
                 Amount = prepareRequest.Amount,
-                SignTime = DateTime.Parse(prepareRequest.SignTime),
+                SignTime = prepareRequest.SignTime,
                 Status = EOrderPaymentStatus.Pending,
             };
 
