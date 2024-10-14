@@ -31,7 +31,7 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public async Task<IActionResult> Prepare(PrepareRequest prepareRequest)
+        public async Task<IActionResult> Prepare([FromBody] PrepareRequest prepareRequest)
         {
             var generatedSignString = GenerateSignString(
                                 prepareRequest.ClickTransId,
@@ -73,8 +73,14 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("complate")]
-        public async Task<IActionResult> Complete(CompleteRequest completeRequest)
+        public async Task<IActionResult> Complete([FromBody] CompleteRequest completeRequest)
         {
+            try
+            {
+                Console.WriteLine(HttpContext.Request.ToString());
+            }
+            catch (Exception ex) { 
+            }
             var generatedSignString = GenerateSignString(
                                 completeRequest.ClickTransId,
                                 completeRequest.ServiceId,
@@ -110,6 +116,13 @@ namespace Click_Integration.Controllers
         [HttpGet("generate-click-link")]
         public async Task<IActionResult> GenereteClickUrl(int orderId, decimal amount)
         {
+            try
+            {
+                Console.WriteLine(HttpContext.Request.ToString());
+            }
+            catch (Exception ex)
+            {
+            }
             var clickBaseUrl = "https://my.click.uz/services/pay";
             var returnUrl = "https://www.urphacapital.uz/courses";
 
