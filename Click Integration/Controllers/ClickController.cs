@@ -31,7 +31,7 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public async Task<IActionResult> Prepare([FromBody] PrepareRequest prepareRequest)
+        public async Task<IActionResult> Prepare([FromForm] PrepareRequest prepareRequest)
         {
             var generatedSignString = GenerateSignString(
                                 prepareRequest.ClickTransId,
@@ -73,7 +73,7 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("complate")]
-        public async Task<IActionResult> Complete([FromBody] CompleteRequest completeRequest)
+        public async Task<IActionResult> Complete([FromForm] CompleteRequest completeRequest)
         {
             try
             {
