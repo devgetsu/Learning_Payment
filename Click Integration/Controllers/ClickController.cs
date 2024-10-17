@@ -129,6 +129,9 @@ namespace Click_Integration.Controllers
                 action,
                 signTime);
 
+            await _telegramService.SendMessage(_clickConfig.SecretKey);
+            await _telegramService.SendMessage(generatedSignString);
+
             if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
@@ -188,16 +191,13 @@ namespace Click_Integration.Controllers
 
         private string GenerateSignString(long clickTransId, int serviceId, string secretKey, string merchantTransId, int merchantPrepareId, decimal amount, int action, string signTime)
         {
-            // To'plangan stringni yaratish
             var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{amount}{action}{signTime}";
 
-            // MD5 hashni hisoblash
             using (var md5 = System.Security.Cryptography.MD5.Create())
             {
                 var inputBytes = System.Text.Encoding.UTF8.GetBytes(signString);
                 var hashBytes = md5.ComputeHash(inputBytes);
 
-                // Hashni hex formatida qaytarish
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
         }
