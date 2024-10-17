@@ -63,7 +63,7 @@ namespace Click_Integration.Controllers
 
             await _telegramService.SendMessage(_clickConfig.SecretKey);
             await _telegramService.SendMessage(generatedSignString);
-            
+
             if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
@@ -101,25 +101,18 @@ namespace Click_Integration.Controllers
         [HttpPost("complate")]
         public async Task<IActionResult> Complete([FromForm] CompleteRequest completeRequest)
         {
-            try
-            {
-                Console.WriteLine(HttpContext.Request.ToString());
-            }
-            catch (Exception ex)
-            {
-            }
-            var generatedSignString = GenerateSignString(
-                                completeRequest.ClickTransId,
-                                completeRequest.ServiceId,
-                                _clickConfig.SecretKey,
-                                completeRequest.MerchantTransId,
-                                completeRequest.MerchantPrepareId,
-                                completeRequest.Amount,
-                                completeRequest.Action,
-                                completeRequest.SignTime);
+            //var generatedSignString = GenerateSignString(
+            //                    completeRequest.ClickTransId,
+            //                    completeRequest.ServiceId,
+            //                    _clickConfig.SecretKey,
+            //                    completeRequest.MerchantTransId,
+            //                    completeRequest.MerchantPrepareId,
+            //                    completeRequest.Amount,
+            //                    completeRequest.Action,
+            //                    completeRequest.SignTime);
 
-            if (completeRequest.SignString != generatedSignString)
-                return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
+            //if (completeRequest.SignString != generatedSignString)
+            //    return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
             if (completeRequest.MerchantTransId != "1")
                 return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
@@ -163,12 +156,12 @@ namespace Click_Integration.Controllers
             return Ok(clickUrl.ToString());
         }
 
-        private string GenerateSignString(params object[] parameters)
+        private string GenerateSignString(long clickTransId, int serviceId, string secretKey, string merchantTransId, decimal amount, int action, string signTime)
         {
-            var input = string.Join("", parameters);
+            var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{amount}{action}{signTime}";
             using (var md5 = MD5.Create())
             {
-                var inputBytes = Encoding.UTF8.GetBytes(input + _clickConfig.SecretKey);
+                var inputBytes = Encoding.UTF8.GetBytes(signString);
                 var hashBytes = md5.ComputeHash(inputBytes);
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
