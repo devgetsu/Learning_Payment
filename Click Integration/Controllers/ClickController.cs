@@ -58,6 +58,8 @@ namespace Click_Integration.Controllers
                                 int.Parse(action),
                                 signTime);
 
+            await _telegramService.SendMessage(generatedSignString);
+            
             if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
