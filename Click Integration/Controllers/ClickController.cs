@@ -32,64 +32,48 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public async Task<IActionResult> Prepare(IFormCollection form)
+        public async Task<IActionResult> Prepare([FromBody] PrepareRequest request)
         {
-            // IFormCollection orqali so'rovdan kelgan ma'lumotlarni olamiz
-            var clickTransId = form["click_trans_id"];
-            var serviceId = form["service_id"];
-            var clickPaydocId = form["click_paydoc_id"];
-            var merchantTransId = form["merchant_trans_id"];
-            var amount = form["amount"];
-            var action = form["action"];
-            var signTime = form["sign_time"];
-            var error = form["error"];
-            var errorNote = form["error_note"];
-            var signString = form["sign_string"];
-
-            // MD5 orqali sign_string ni yaratamiz
+            // Sign stringni yaratish
             var generatedSignString = GenerateSignString(
-                                long.Parse(clickTransId),
-                                int.Parse(serviceId),
+                                request.ClickTransId,
+                                request.ServiceId,
                                 _clickConfig.SecretKey,
-                                merchantTransId,
-                                decimal.Parse(amount),
-                                int.Parse(action),
-                                signTime);
+                                request.MerchantTransId,
+                                request.Amount,
+                                request.Action,
+                                request.SignTime);
 
-            // sign_stringni tekshiramiz
-            if (signString != generatedSignString)
+            if (request.SignString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
-            // merchant_trans_id ni tekshiramiz
-            if (merchantTransId != "1")
+            if (request.MerchantTransId != "1")
                 return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
 
-            // ClickTransaction modeliga qiymatlarni kiritamiz
             var clickTransaction = new ClickTransaction
             {
-                ClickTransId = long.Parse(clickTransId),
-                MerchantTransId = merchantTransId,
-                Amount = decimal.Parse(amount),
-                SignTime = signTime,
+                ClickTransId = request.ClickTransId,
+                MerchantTransId = request.MerchantTransId,
+                Amount = request.Amount,
+                SignTime = request.SignTime,
                 Status = EOrderPaymentStatus.Pending,
             };
 
-            // Ma'lumotlar bazasiga yozamiz
             _context.ClickTransactions.Add(clickTransaction);
             _context.SaveChanges();
 
-            // Javob qaytaramiz
             var response = new PrepareResponse()
             {
                 ClickTransId = clickTransaction.ClickTransId,
                 MerchantTransId = clickTransaction.MerchantTransId,
-                MerchantPrepareId = 1, // OrderId ni belgilaymiz
+                MerchantPrepareId = 1,
                 Error = 0,
                 ErrorNote = "Payment prepared successfully"
             };
 
             return Ok(response);
         }
+
 
 
         [HttpPost("complate")]
