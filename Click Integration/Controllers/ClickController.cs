@@ -48,6 +48,9 @@ namespace Click_Integration.Controllers
             var errorNote = form["error_note"];
             var signString = form["sign_string"];
 
+
+            await _telegramService.SendMessage($"{clickTransId},{serviceId},{merchantTransId},{amount},{action},{signTime}");
+            
             // Sign stringni yaratish va tekshirish
             var generatedSignString = GenerateSignString(
                                 long.Parse(clickTransId),
@@ -58,6 +61,7 @@ namespace Click_Integration.Controllers
                                 int.Parse(action),
                                 signTime);
 
+            await _telegramService.SendMessage(_clickConfig.SecretKey);
             await _telegramService.SendMessage(generatedSignString);
             
             if (signString != generatedSignString)
