@@ -32,125 +32,87 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public IActionResult Prepare(IFormCollection request)
+        public async Task<IActionResult> Prepare([FromForm] PrepareRequest prepareRequest)
         {
-            string clickTransId = request["Request.click_trans_id"];
-            string serviceId = request["Request.service_id"];
-            string clickPaydocId = request["Request.click_paydoc_id"];
-            string merchantTransId = request["Request.merchant_trans_id"];
-            decimal amount = Convert.ToDecimal(request["Request.amount"]);
-            string action = request["Request.action"];
-            string error = request["Request.error"];
-            string errorNote = request["Request.error_note"];
-            string signTime = request["Request.sign_time"];
-            string signString = request["Request.sign_string"];
-            string secretKey = "siznigSecretKeyingiz";
+            var generatedSignString = GenerateSignString(
+                                prepareRequest.ClickTransId,
+                                prepareRequest.ServiceId,
+                                _clickConfig.SecretKey,
+                                prepareRequest.MerchantTransId,
+                                prepareRequest.Amount,
+                                prepareRequest.Action,
+                                prepareRequest.SignTime);
 
-            string generatedSignString = GenerateMd5($"{clickTransId}{serviceId}{secretKey}{merchantTransId}{amount}{action}{signTime}");
-
-            if (signString != generatedSignString)
-            {
+            if (prepareRequest.SignString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
-            }
 
-            //_dbContext.ClickUz.Add(new ClickUz
-            //{
-            //    ClickTransId = clickTransId,
-            //    MerchantTransId = merchantTransId,
-            //    Amount = amount,
-            //    AmountRub = amount,
-            //    SignTime = signTime,
-            //    Situation = error
-            //});
-            //_dbContext.SaveChanges();
+            if (prepareRequest.MerchantTransId != "1")
+                return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
 
-            var response = new
+            var clickTransaction = new ClickTransaction
             {
-                click_trans_id = clickTransId,
-                merchant_trans_id = merchantTransId,
-                merchant_prepare_id = merchantTransId,
-                error = error == "0" ? 0 : -9,
-                error_note = error == "0" ? "Payment prepared successfully" : "Do not find a user!!!"
+                ClickTransId = prepareRequest.ClickTransId,
+                MerchantTransId = prepareRequest.MerchantTransId,
+                Amount = prepareRequest.Amount,
+                SignTime = prepareRequest.SignTime,
+                Status = EOrderPaymentStatus.Pending,
+            };
+
+            _context.ClickTransactions.Add(clickTransaction);
+            _context.SaveChanges();
+
+            var response = new PrepareResponse()
+            {
+                ClickTransId = clickTransaction.ClickTransId,
+                MerchantTransId = clickTransaction.MerchantTransId,
+                MerchantPrepareId = 1, //OrderId ni bervorelikchi
+                Error = 0,
+                ErrorNote = "Payment prepared successfully"
             };
 
             return Ok(response);
         }
 
-        [HttpPost("complete")]
-        public IActionResult Complete(IFormCollection request)
+        [HttpPost("complate")]
+        public async Task<IActionResult> Complete([FromForm] CompleteRequest completeRequest)
         {
-            string clickTransId = request["Request.click_trans_id"];
-            string serviceId = request["Request.service_id"];
-            string clickPaydocId = request["Request.click_paydoc_id"];
-            string merchantTransId = request["Request.merchant_trans_id"];
-            string merchantPrepareId = request["Request.merchant_prepare_id"];
-            decimal amount = Convert.ToDecimal(request["Request.amount"]);
-            string action = request["Request.action"];
-            string error = request["Request.error"];
-            string errorNote = request["Request.error_note"];
-            string signTime = request["Request.sign_time"];
-            string signString = request["Request.sign_string"];
-            string secretKey = "siznigSecretKeyingiz";
-
-            string generatedSignString = GenerateMd5($"{clickTransId}{serviceId}{secretKey}{merchantTransId}{merchantPrepareId}{amount}{action}{signTime}");
-
-            if (signString != generatedSignString)
+            try
             {
+                Console.WriteLine(HttpContext.Request.ToString());
+            }
+            catch (Exception ex)
+            {
+            }
+            var generatedSignString = GenerateSignString(
+                                completeRequest.ClickTransId,
+                                completeRequest.ServiceId,
+                                _clickConfig.SecretKey,
+                                completeRequest.MerchantTransId,
+                                completeRequest.MerchantPrepareId,
+                                completeRequest.Amount,
+                                completeRequest.Action,
+                                completeRequest.SignTime);
+
+            if (completeRequest.SignString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
-            }
 
-            if (error == "0")
+            if (completeRequest.MerchantTransId != "1")
+                return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
+
+            var clickTransaction = _context.ClickTransactions.FirstOrDefault(c => c.ClickTransId == completeRequest.ClickTransId);
+            if (clickTransaction != null)
+                clickTransaction.Status = EOrderPaymentStatus.Paid;
+
+            _context.SaveChanges();
+
+            return Ok(new CompleteResponse()
             {
-                //var clickRecord = _dbContext.ClickUz.FirstOrDefault(c => c.ClickTransId == clickTransId);
-                //if (clickRecord != null)
-                //{
-                //    clickRecord.Situation = 1;
-                //    clickRecord.Status = "success";
-                //    _dbContext.SaveChanges();
-                //}
-
-                //var order = _dbContext.Orders.FirstOrDefault(o => o.Id == merchantTransId);
-                //if (order != null)
-                //{
-                //    order.Status = "yakunlandi";
-                //    _dbContext.SaveChanges();
-                //}
-
-                return Ok(new
-                {
-                    click_trans_id = clickTransId,
-                    merchant_trans_id = merchantTransId,
-                    merchant_confirm_id = merchantTransId,
-                    error = 0,
-                    error_note = "Payment Success"
-                });
-            }
-            else
-            {
-                //    var clickRecord = _dbContext.ClickUz.FirstOrDefault(c => c.ClickTransId == clickTransId);
-                //    if (clickRecord != null)
-                //    {
-                //        clickRecord.Situation = -9;
-                //        clickRecord.Status = "error";
-                //        _dbContext.SaveChanges();
-                //    }
-
-                //    var order = _dbContext.Orders.FirstOrDefault(o => o.Id == merchantTransId);
-                //    if (order != null)
-                //    {
-                //        order.Status = "bekor qilingan";
-                //        _dbContext.SaveChanges();
-                //    }
-
-                return Ok(new
-                {
-                    click_trans_id = clickTransId,
-                    merchant_trans_id = merchantTransId,
-                    merchant_confirm_id = merchantTransId,
-                    error = -9,
-                    error_note = "Do not find a user!!!"
-                });
-            }
+                ClickTransId = clickTransaction.ClickTransId,
+                MerchantTransId = clickTransaction.MerchantTransId,
+                MerchantConfirmId = clickTransaction.Id,
+                Error = 0,
+                ErrorNote = "Payment Success"
+            });
         }
 
         [HttpGet("generate-click-link")]
@@ -176,13 +138,14 @@ namespace Click_Integration.Controllers
             return Ok(clickUrl.ToString());
         }
 
-        private string GenerateMd5(string input)
+        private string GenerateSignString(params object[] parameters)
         {
+            var input = string.Join("", parameters);
             using (var md5 = MD5.Create())
             {
-                var inputBytes = Encoding.UTF8.GetBytes(input);
+                var inputBytes = Encoding.UTF8.GetBytes(input + _clickConfig.SecretKey);
                 var hashBytes = md5.ComputeHash(inputBytes);
-                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
         }
     }
