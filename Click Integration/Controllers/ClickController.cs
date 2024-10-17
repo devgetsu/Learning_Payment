@@ -98,26 +98,44 @@ namespace Click_Integration.Controllers
 
 
 
-        [HttpPost("complate")]
-        public async Task<IActionResult> Complete([FromForm] CompleteRequest completeRequest)
+        [HttpPost("complete")]
+        public async Task<IActionResult> Complete()
         {
-            //var generatedSignString = GenerateSignString(
-            //                    completeRequest.ClickTransId,
-            //                    completeRequest.ServiceId,
-            //                    _clickConfig.SecretKey,
-            //                    completeRequest.MerchantTransId,
-            //                    completeRequest.MerchantPrepareId,
-            //                    completeRequest.Amount,
-            //                    completeRequest.Action,
-            //                    completeRequest.SignTime);
 
-            //if (completeRequest.SignString != generatedSignString)
-            //    return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
+            // Request.Form orqali ma'lumotlarni olish
 
-            if (completeRequest.MerchantTransId != "1")
-                return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
+            var form = Request.Form;
 
-            var clickTransaction = _context.ClickTransactions.FirstOrDefault(c => c.ClickTransId == completeRequest.ClickTransId);
+            var clickTransId = long.Parse(form["click_trans_id"]);
+            var serviceId = int.Parse(form["service_id"]);
+            var clickPaydocId = long.Parse(form["click_paydoc_id"]);
+            var merchantTransId = form["merchant_trans_id"];
+            var merchantPrepareId = int.Parse(form["merchant_prepare_id"]);
+            var amount = decimal.Parse(form["amount"]);
+            var action = int.Parse(form["action"]);
+            var error = int.Parse(form["error"]);
+            var errorNote = form["error_note"];
+            var signTime = form["sign_time"];
+            var signString = form["sign_string"];
+
+
+            var generatedSignString = GenerateSignString(
+                clickTransId,
+                serviceId,
+                _clickConfig.SecretKey,
+                merchantTransId,
+                merchantPrepareId,
+                amount,
+                action,
+                signTime);
+
+            if (signString != generatedSignString)
+                return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
+
+            if (merchantTransId != "1")
+                return BadRequest(new { error = -9, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
+
+            var clickTransaction = _context.ClickTransactions.FirstOrDefault(c => c.ClickTransId == clickTransId);
             if (clickTransaction != null)
                 clickTransaction.Status = EOrderPaymentStatus.Paid;
 
@@ -132,6 +150,7 @@ namespace Click_Integration.Controllers
                 ErrorNote = "Payment Success"
             });
         }
+
 
         [HttpGet("generate-click-link")]
         public async Task<IActionResult> GenereteClickUrl(int orderId, decimal amount)
@@ -166,5 +185,22 @@ namespace Click_Integration.Controllers
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
         }
+
+        private string GenerateSignString(long clickTransId, int serviceId, string secretKey, string merchantTransId, int merchantPrepareId, decimal amount, int action, string signTime)
+        {
+            // To'plangan stringni yaratish
+            var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{amount}{action}{signTime}";
+
+            // MD5 hashni hisoblash
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                var inputBytes = System.Text.Encoding.UTF8.GetBytes(signString);
+                var hashBytes = md5.ComputeHash(inputBytes);
+
+                // Hashni hex formatida qaytarish
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
     }
 }
