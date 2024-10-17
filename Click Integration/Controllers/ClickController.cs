@@ -191,11 +191,11 @@ namespace Click_Integration.Controllers
 
         private string GenerateSignString(long clickTransId, int serviceId, string secretKey, string merchantTransId, int merchantPrepareId, decimal amount, int action, string signTime)
         {
-            var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{amount}{action}{signTime}";
+            var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{merchantPrepareId}{amount}{action}{signTime}";
 
-            using (var md5 = System.Security.Cryptography.MD5.Create())
+            using (var md5 = MD5.Create())
             {
-                var inputBytes = System.Text.Encoding.UTF8.GetBytes(signString);
+                var inputBytes = Encoding.UTF8.GetBytes(signString);
                 var hashBytes = md5.ComputeHash(inputBytes);
 
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
