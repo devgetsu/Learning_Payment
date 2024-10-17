@@ -15,13 +15,15 @@ namespace Click_Integration.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ClickConfig _clickConfig;
-
+        private readonly ITelegramService _telegramService;
         public ClickController(
             ApplicationDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ITelegramService telegramService)
         {
             _context = context;
             _clickConfig = configuration.GetSection("ClickConfig").Get<ClickConfig>();
+            _telegramService = telegramService;
         }
 
         [HttpGet("Transactions")]
@@ -32,30 +34,42 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public async Task<IActionResult> Prepare([FromBody] PrepareRequest request)
+        public async Task<IActionResult> Prepare(IFormCollection form)
         {
-            // Sign stringni yaratish
-            var generatedSignString = GenerateSignString(
-                                request.ClickTransId,
-                                request.ServiceId,
-                                _clickConfig.SecretKey,
-                                request.MerchantTransId,
-                                request.Amount,
-                                request.Action,
-                                request.SignTime);
+            await _telegramService.SendMessage("prepare works");
+            var clickTransId = form["click_trans_id"];
+            var serviceId = form["service_id"];
+            var clickPaydocId = form["click_paydoc_id"];
+            var merchantTransId = form["merchant_trans_id"];
+            var amount = form["amount"];
+            var action = form["action"];
+            var signTime = form["sign_time"];
+            var error = form["error"];
+            var errorNote = form["error_note"];
+            var signString = form["sign_string"];
 
-            if (request.SignString != generatedSignString)
+            // Sign stringni yaratish va tekshirish
+            var generatedSignString = GenerateSignString(
+                                long.Parse(clickTransId),
+                                int.Parse(serviceId),
+                                _clickConfig.SecretKey,
+                                merchantTransId,
+                                decimal.Parse(amount),
+                                int.Parse(action),
+                                signTime);
+
+            if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
 
-            if (request.MerchantTransId != "1")
+            if (merchantTransId != "1")
                 return BadRequest(new { error = -6, error_note = "The transaction is not found (check parameter merchant_prepare_id)" });
 
             var clickTransaction = new ClickTransaction
             {
-                ClickTransId = request.ClickTransId,
-                MerchantTransId = request.MerchantTransId,
-                Amount = request.Amount,
-                SignTime = request.SignTime,
+                ClickTransId = long.Parse(clickTransId),
+                MerchantTransId = merchantTransId,
+                Amount = decimal.Parse(amount),
+                SignTime = signTime,
                 Status = EOrderPaymentStatus.Pending,
             };
 
@@ -73,6 +87,7 @@ namespace Click_Integration.Controllers
 
             return Ok(response);
         }
+
 
 
 
