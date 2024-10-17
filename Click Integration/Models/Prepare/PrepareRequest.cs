@@ -14,7 +14,7 @@ namespace Click_Integration.Models.Prepare
         public long ClickPaydocId { get; set; } // CLICK tizimidagi to'lov ID raqami (SMSda ko'rsatiladi)
 
         [JsonPropertyName("merchant_trans_id")]
-        public string MerchantTransId { get; set; } // Online do'kondagi buyurtma ID yoki shaxsiy kabinet
+        public required string MerchantTransId { get; set; } // Online do'kondagi buyurtma ID yoki shaxsiy kabinet
 
         [JsonPropertyName("amount")]
         public decimal Amount { get; set; }     // To'lov summasi (so'mda)
@@ -26,12 +26,12 @@ namespace Click_Integration.Models.Prepare
         public int Error { get; set; }          // To'lov holati (0 – muvaffaqiyatli, xatolik bo'lsa xato kodi)
 
         [JsonPropertyName("error_note")]
-        public string ErrorNote { get; set; }   // Xato kodi izohi
+        public required string ErrorNote { get; set; }   // Xato kodi izohi
 
         [JsonPropertyName("sign_time")]
-        public string SignTime { get; set; }    // To'lov vaqti (format: "YYYY-MM-DD HH:mm:ss")
+        public required string SignTime { get; set; }    // To'lov vaqti (format: "YYYY-MM-DD HH:mm:ss")
 
         [JsonPropertyName("sign_string")]
-        public string SignString { get; set; }  // MD5 hash orqali tasdiqlash (click_trans_id + service_id + SECRET_KEY + ...)
+        public required string SignString { get; set; }  // MD5 hash orqali tasdiqlash (click_trans_id + service_id + SECRET_KEY + ...)
     }
 }
