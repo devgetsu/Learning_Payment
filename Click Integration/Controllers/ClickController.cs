@@ -34,9 +34,9 @@ namespace Click_Integration.Controllers
         }
 
         [HttpPost("prepare")]
-        public async Task<IActionResult> Prepare(IFormCollection form)
+        public async Task<IActionResult> Prepare()
         {
-            await _telegramService.SendMessage("prepare works");
+            var form = Request.Form;  // Request.Form orqali to'g'ridan-to'g'ri olish
             var clickTransId = form["click_trans_id"];
             var serviceId = form["service_id"];
             var clickPaydocId = form["click_paydoc_id"];
@@ -87,6 +87,7 @@ namespace Click_Integration.Controllers
 
             return Ok(response);
         }
+
 
 
 
