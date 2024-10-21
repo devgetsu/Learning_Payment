@@ -4,60 +4,66 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Telegram.Bot;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddSingleton<TelegramBotClient>(provider =>
+internal class Program
 {
-    var botToken = $"8082103495:AAHbyuRCCp0UQ1CGTDpSHVi2RuYF87EVaj4";
-    return new TelegramBotClient(botToken);
-});
-
-builder.Services.AddSingleton<ITelegramService, TelegramService>();
-
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
+    private static void Main(string[] args)
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
+        var builder = WebApplication.CreateBuilder(args);
 
-var logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(builder.Configuration)
-                .Enrich.FromLogContext()
-                .CreateLogger();
+        builder.Services.AddControllers();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
-//builder.Logging.ClearProviders();
+        builder.Services.AddSingleton(provider =>
+        {
+            var botToken = $"8082103495:AAHbyuRCCp0UQ1CGTDpSHVi2RuYF87EVaj4";
+            return new TelegramBotClient(botToken);
+        });
 
-builder.Logging.AddSerilog(logger);
+        builder.Services.AddSingleton<ITelegramService, TelegramService>();
 
-builder.Services.AddControllers();
 
-builder.Services.AddDbContext<ApplicationDbContext>(x =>
-    x.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            });
+        });
 
-var app = builder.Build();
+        var logger = new LoggerConfiguration()
+                        .ReadFrom.Configuration(builder.Configuration)
+                        .Enrich.FromLogContext()
+                        .CreateLogger();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        //builder.Logging.ClearProviders();
+
+        builder.Logging.AddSerilog(logger);
+
+        builder.Services.AddControllers();
+
+        builder.Services.AddDbContext<ApplicationDbContext>(x =>
+            x.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
+        var app = builder.Build();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+
+        app.UseHttpsRedirection();
+
+        app.UseCors();
+
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        app.Run();
+    }
 }
-
-
-app.UseHttpsRedirection();
-
-app.UseCors();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
