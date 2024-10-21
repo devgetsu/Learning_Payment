@@ -11,7 +11,6 @@ namespace Click_Integration
             Database.Migrate();
         }
 
-        public DbSet<Order> Orders { get; set; }
         public DbSet<ClickTransaction> ClickTransactions { get; set; }
     }
 }
