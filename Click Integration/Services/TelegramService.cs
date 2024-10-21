@@ -1,6 +1,6 @@
 ﻿using Telegram.Bot;
 
-namespace Click_Integration
+namespace Click_Integration.Services
 {
     public class TelegramService : ITelegramService
     {

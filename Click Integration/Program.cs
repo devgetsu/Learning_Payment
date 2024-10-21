@@ -1,5 +1,6 @@
 using Click_Integration;
 using Click_Integration.Middlewares;
+using Click_Integration.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Telegram.Bot;
@@ -51,7 +52,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseCors();

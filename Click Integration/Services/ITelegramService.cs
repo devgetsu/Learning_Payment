@@ -1,4 +1,4 @@
-﻿namespace Click_Integration
+﻿namespace Click_Integration.Services
 {
     public interface ITelegramService
     {
