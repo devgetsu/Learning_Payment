@@ -1,5 +1,4 @@
 using Click_Integration;
-using Click_Integration.Middlewares;
 using Click_Integration.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
