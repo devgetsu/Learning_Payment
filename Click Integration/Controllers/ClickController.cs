@@ -15,15 +15,14 @@ namespace Click_Integration.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ClickConfig _clickConfig;
-        private readonly ITelegramService _telegramService;
+
         public ClickController(
             ApplicationDbContext context,
             IConfiguration configuration,
             ITelegramService telegramService)
         {
             _context = context;
-            _clickConfig = configuration.GetSection("ClickConfig").Get<ClickConfig>();
-            _telegramService = telegramService;
+            _clickConfig = configuration.GetSection("ClickConfig").Get<ClickConfig>()!;
         }
 
         [HttpGet("Transactions")]
@@ -36,7 +35,7 @@ namespace Click_Integration.Controllers
         [HttpPost("prepare")]
         public async Task<IActionResult> Prepare()
         {
-            var form = Request.Form;  // Request.Form orqali to'g'ridan-to'g'ri olish
+            var form = Request.Form;
             var clickTransId = form["click_trans_id"];
             var serviceId = form["service_id"];
             var clickPaydocId = form["click_paydoc_id"];
@@ -48,10 +47,6 @@ namespace Click_Integration.Controllers
             var errorNote = form["error_note"];
             var signString = form["sign_string"];
 
-
-            await _telegramService.SendMessage($"{clickTransId},{serviceId},{merchantTransId},{amount},{action},{signTime}");
-            
-            // Sign stringni yaratish va tekshirish
             var generatedSignString = GenerateSignString(
                                 long.Parse(clickTransId),
                                 int.Parse(serviceId),
@@ -60,9 +55,6 @@ namespace Click_Integration.Controllers
                                 decimal.Parse(amount),
                                 int.Parse(action),
                                 signTime);
-
-            await _telegramService.SendMessage(_clickConfig.SecretKey);
-            await _telegramService.SendMessage(generatedSignString);
 
             if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
@@ -94,16 +86,9 @@ namespace Click_Integration.Controllers
             return Ok(response);
         }
 
-
-
-
-
         [HttpPost("complete")]
         public async Task<IActionResult> Complete()
         {
-
-            // Request.Form orqali ma'lumotlarni olish
-
             var form = Request.Form;
 
             var clickTransId = long.Parse(form["click_trans_id"]);
@@ -129,8 +114,6 @@ namespace Click_Integration.Controllers
                 action,
                 signTime);
 
-            await _telegramService.SendMessage(_clickConfig.SecretKey);
-            await _telegramService.SendMessage(generatedSignString);
 
             if (signString != generatedSignString)
                 return BadRequest(new { error = -1, error_note = "Invalid sign_string" });
@@ -154,17 +137,9 @@ namespace Click_Integration.Controllers
             });
         }
 
-
         [HttpGet("generate-click-link")]
         public async Task<IActionResult> GenereteClickUrl(int orderId, decimal amount)
         {
-            try
-            {
-                Console.WriteLine(HttpContext.Request.ToString());
-            }
-            catch (Exception ex)
-            {
-            }
             var clickBaseUrl = "https://my.click.uz/services/pay";
             var returnUrl = "https://www.urphacapital.uz/courses";
 
@@ -188,7 +163,6 @@ namespace Click_Integration.Controllers
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
         }
-
         private string GenerateSignString(long clickTransId, int serviceId, string secretKey, string merchantTransId, int merchantPrepareId, decimal amount, int action, string signTime)
         {
             var signString = $"{clickTransId}{serviceId}{secretKey}{merchantTransId}{merchantPrepareId}{amount}{action}{signTime}";
